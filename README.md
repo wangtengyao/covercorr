@@ -10,7 +10,7 @@ The repository supports both **Python** and **R**, with structurally separated p
 
 The **coverage correlation coefficient** is a statistical measure that quantifies dependence between two random vectors by computing the union volume of data-centered hyperrectangles in a uniform space. It is especially useful in multivariate, nonlinear, or non-Euclidean contexts.
 
-For a sample of paired observations \((X_i, Y_i)\), the statistic:
+For a sample of paired observations $(X_i, Y_i)$, the statistic:
 
 - Transforms each sample to multivariate ranks using optimal transport.
 - Places a small cube around each ranked point and compute the union volume
