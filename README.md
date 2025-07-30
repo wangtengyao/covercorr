@@ -23,7 +23,7 @@ For a sample of paired observations $(X_i, Y_i)$, the statistic:
 All Python code is under the `python/` subdirectory. To install directly from GitHub:
 
 ```bash
-pip install git+https://github.com/wangtengyao/covercorr.git@main#egg=covercorr&subdirectory=python
+pip install git+https://github.com/wangtengyao/covercorr.git
 ```
 
 ### Usage:
@@ -46,7 +46,7 @@ print(f"Coverage correlation: {kappa}, p-value: {pval}")
 All R code is under the `R/` subdirectory. To install from the GitHub:
 
 ```r
-remotes::install_github('wangtengyao/covercorr', subdir='R')
+remotes::install_github('wangtengyao/covercorr', subdir='R_package')
 ```
 
 ### Usage
@@ -66,10 +66,9 @@ print(result)
 ```bash
 covercorr/
 │
-├── R/             # R package
+├── R_package/     # R package
 │
 ├── python/        # Python package
 │
-├── LICENSE
 └── README.md
 ```
