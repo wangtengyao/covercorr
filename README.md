@@ -46,7 +46,7 @@ print(f"Coverage correlation: {kappa}, p-value: {pval}")
 All R code is under the `R/` subdirectory. To install from the GitHub:
 
 ```r
-remotes::install_github('wangtengyao/covercorr', subdir='R_package')
+remotes::install_github('wangtengyao/covercorr', subdir='R_package/covercorr')
 ```
 
 ### Usage
