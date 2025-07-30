@@ -7,7 +7,8 @@ setup(
     author='Tengyao Wang',
     author_email='t.wang59@lse.ac.uk',
     url='https://github.com/wangtengyao/covercorr',
-    packages=find_packages(),
+    package_dir={"": "python"},
+    packages=find_packages(where="python"),
     install_requires=[
         'numpy',
         'pandas',
