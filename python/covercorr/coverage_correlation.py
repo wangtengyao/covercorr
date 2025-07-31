@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import itertools
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import math
 from scipy.stats import norm
 from scipy.spatial.distance import cdist
@@ -189,19 +189,19 @@ def rank_transform(x):
 '''
 Function to visualise rectangles and draw the [0,1]^2 square
 '''
-def plot_rectangles(xmin, xmax, ymin, ymax):
-    fig, ax = plt.subplots()
-    for (a, c, b, d) in zip(xmin, ymin, xmax, ymax):
-        rect = plt.Rectangle((a, c), b - a, d - c, linewidth=1, edgecolor='r', facecolor='none')
-        ax.add_patch(rect)
-    
-    box = plt.Rectangle((0,0), 1, 1, linewidth=2, edgecolor='k', facecolor='none')
-    ax.add_patch(box)
-    
-    ax.autoscale_view()
-    ax.set_aspect('equal', 'box')
-    plt.grid(True)
-    plt.show()
+# def plot_rectangles(xmin, xmax, ymin, ymax):
+#     fig, ax = plt.subplots()
+#     for (a, c, b, d) in zip(xmin, ymin, xmax, ymax):
+#         rect = plt.Rectangle((a, c), b - a, d - c, linewidth=1, edgecolor='r', facecolor='none')
+#         ax.add_patch(rect)
+#
+#     box = plt.Rectangle((0,0), 1, 1, linewidth=2, edgecolor='k', facecolor='none')
+#     ax.add_patch(box)
+#
+#     ax.autoscale_view()
+#     ax.set_aspect('equal', 'box')
+#     plt.grid(True)
+#     plt.show()
 
 '''
 Split rectangles in [-1,2]^d into smaller rectangles by considering the quotient space R^d / Z^d, 
@@ -277,8 +277,8 @@ def coverage_correlation(x, y, visualise=False):
     zmin_splitted, zmax_splitted = split_rectangles(zmin, zmax)
     
     # to visualise, plot first coordinate of x against last coordinate of y
-    if visualise:
-        plot_rectangles(zmin_splitted[:, 0], zmax_splitted[:, 0], zmin_splitted[:, -1], zmax_splitted[:, -1])
+    # if visualise:
+    #    plot_rectangles(zmin_splitted[:, 0], zmax_splitted[:, 0], zmin_splitted[:, -1], zmax_splitted[:, -1])
     
     total_volume = covered_volume(zmin_splitted, zmax_splitted)
     kappa = 1 - (1 - 1/n) ** n - total_volume  # 1 - (1 - 1/n)^n is the exact mean
