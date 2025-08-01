@@ -17,6 +17,7 @@ MK_rank <- function(X, U){
 #' exact formula for variance of test stat
 #' @param n sample size
 #' @param d dimension
+#' @export
 variance_formula <- function(n, d){
   V <- ((1 - 2 / n)^n - (1 - 1 / n)^(2 * n)) * n
   multiplier <- 1.0

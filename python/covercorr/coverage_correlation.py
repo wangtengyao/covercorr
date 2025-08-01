@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import itertools
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 import math
 from scipy.stats import norm
 from scipy.spatial.distance import cdist
@@ -189,19 +189,19 @@ def rank_transform(x):
 '''
 Function to visualise rectangles and draw the [0,1]^2 square
 '''
-# def plot_rectangles(xmin, xmax, ymin, ymax):
-#     fig, ax = plt.subplots()
-#     for (a, c, b, d) in zip(xmin, ymin, xmax, ymax):
-#         rect = plt.Rectangle((a, c), b - a, d - c, linewidth=1, edgecolor='r', facecolor='none')
-#         ax.add_patch(rect)
-#
-#     box = plt.Rectangle((0,0), 1, 1, linewidth=2, edgecolor='k', facecolor='none')
-#     ax.add_patch(box)
-#
-#     ax.autoscale_view()
-#     ax.set_aspect('equal', 'box')
-#     plt.grid(True)
-#     plt.show()
+def plot_rectangles(xmin, xmax, ymin, ymax):
+    fig, ax = plt.subplots()
+    for (a, c, b, d) in zip(xmin, ymin, xmax, ymax):
+        rect = plt.Rectangle((a, c), b - a, d - c, linewidth=1, edgecolor='r', facecolor='none')
+        ax.add_patch(rect)
+
+    box = plt.Rectangle((0,0), 1, 1, linewidth=2, edgecolor='k', facecolor='none')
+    ax.add_patch(box)
+
+    ax.autoscale_view()
+    ax.set_aspect('equal', 'box')
+    plt.grid(True)
+    plt.show()
 
 '''
 Split rectangles in [-1,2]^d into smaller rectangles by considering the quotient space R^d / Z^d, 

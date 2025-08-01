@@ -13,6 +13,7 @@ setup(
         'numpy',
         'pandas',
         'scipy',
+        'matplotlib',
     ],
     python_requires='>=3.7',
 )
