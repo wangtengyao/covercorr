@@ -1,10 +1,15 @@
 Package: covercorr
 Type: Package
-Title: What the Package Does (Short Line)
+Title: Coverage correlation coefficient and testing for independence
 Version: 1.0
 Date: 2025-07-30
 Author: Xuzhi Yang, Mona Azadkia, Tengyao Wang
 Maintainer: Tengyao Wang <t.wang59@lse.ac.uk>
 Description: Computes the coverage correlation coefficient, a statistical measure that quantifies dependence between two random vectors by computing the union volume of data-centered hyperrectangles in a uniform space.
 License: GPL-2
-RoxygenNote: 7.3.2
+Encoding: UTF-8
+Depends: R (>= 4.0)
+Imports: clue, stats
+LinkingTo:
+NeedsCompilation: yes
+

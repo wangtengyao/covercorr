@@ -1,47 +1,35 @@
-library(sf)
-
-#' Split axis-aligned rectangles mod [0,1]^d
-#' Given lower and upper corners of axis-aligned rectangles in R^d, this 
-#' function generates the image of these rectangles modulo [0,1]^d (i.e. 
-#' viewing [0,1]^d with periodic boundaries)
-#'
-#' @param zmin A numeric matrix of size \eqn{n \times d} containing the lower
-#'   bounds (one rectangle per row) before shifting.
-#' @param zmax A numeric matrix of size \eqn{n \times d} containing the upper
-#'   bounds (one rectangle per row) before shifting. Must satisfy
-#'   \code{zmin < zmax} elementwise.
-#'
-#' @return A list with two numeric matrices:
-#' \describe{
-#'   \item{\code{zmin_splitted}}{Matrix of lower bounds of the non-empty
-#'   intersections with \eqn{[0,1]^d}.}
-#'   \item{\code{zmax_splitted}}{Matrix of upper bounds of the non-empty
-#'   intersections with \eqn{[0,1]^d}.}
-#' }
-#'
+#' Compute Monge-Kantorovich ranks
+#' @param X data points
+#' @param U reference points
 #' @export
-split_rectangles <- function(zmin, zmax) {
-  d <- ncol(zmin)
-  
-  # all 3^d shifts in {-1, 0, 1}^d
-  shifts_df <- expand.grid(rep(list(c(-1, 0, 1)), d))
-  
-  zmin_splitted <- zmax_splitted <- matrix(nrow=0, ncol=d)
-  
-  for (i in seq_len(nrow(shifts_df))) {
-    shift <- as.numeric(shifts_df[i, ])
-    
-    # shift rectangles and intersect with [0,1]^d
-    zmin_shifted <- pmax(sweep(zmin, 2, shift, `+`), 0)
-    zmax_shifted <- pmin(sweep(zmax, 2, shift, `+`), 1)
-    
-    # keep rows where intersection is non-empty (strictly positive side lengths)
-    idx <- apply(zmin_shifted < zmax_shifted, 1, all)
-    zmin_splitted <- rbind(zmin_splitted, zmin_shifted[idx, , drop=FALSE])
-    zmax_splitted <- rbind(zmax_splitted, zmax_shifted[idx, , drop=FALSE])
+MK_rank <- function(X, U){
+  n <- nrow(X)
+  if (ncol(X) == 1){
+    return(sort(U)[rank(X)])
   }
+  cost <- as.matrix(dist(rbind(X, U)))[1:n, (n+1):(2*n)]
+  cost <- cost^2 # squared Euclidean cost
   
-  list(zmin_splitted = zmin_splitted, zmax_splitted = zmax_splitted)
+  assignment <- clue::solve_LSAP(cost)
+  return(U[assignment, ])
+}
+
+#' exact formula for variance of test stat
+#' @param n sample size
+#' @param d dimension
+variance_formula <- function(n, d){
+  V <- ((1 - 2 / n)^n - (1 - 1 / n)^(2 * n)) * n
+  multiplier <- 1.0
+  inv_factorial <- 1.0
+  
+  if (n >= 1) {
+    for (s in 1:n) {
+      multiplier <- multiplier * (1 - (s - 1) / n)
+      inv_factorial <- inv_factorial / s
+      V <- V + multiplier * inv_factorial * (1 - 2 / n)^(n - s) * (2 / (s + 1))^d
+    }
+  }
+  return(V)
 }
 
 #' Plot a collection of axis-aligned rectangles in the unit square
@@ -75,36 +63,6 @@ plot_rectangles <- function(xmin, xmax, ymin, ymax, add=FALSE) {
   }
   # Draw the [0,1] x [0,1] box
   rect(0, 0, 1, 1, border = "black", lwd = 1, col = NA)
-}
-
-#' Area of the union of axis-aligned rectangles via \pkg{sf}
-#'
-#' Builds simple polygons from the supplied rectangles, unions them, and returns
-#' their total area.
-#'
-#' @param xmin Numeric vector of left x-coordinates.
-#' @param xmax Numeric vector of right x-coordinates (same length as \code{xmin}).
-#' @param ymin Numeric vector of bottom y-coordinates (same length as \code{xmin}).
-#' @param ymax Numeric vector of top y-coordinates (same length as \code{xmin}).
-#'
-#' @return Area of the union of the rectangles. 
-#'
-#' @importFrom sf st_polygon st_area st_union st_sfc
-#' @export
-union_area <- function(xmin, xmax, ymin, ymax){
-  polys <- lapply(seq_along(xmin), function(i) {
-    m <- matrix(
-      c(xmin[i], ymin[i],
-        xmax[i], ymin[i],
-        xmax[i], ymax[i],
-        xmin[i], ymax[i],
-        xmin[i], ymin[i]),
-      ncol = 2, byrow = TRUE
-    )
-    st_polygon(list(m))
-  })
-  
-  st_area(st_union(st_sfc(polys)))
 }
 
 #' Coverage-based dependence measure with optional visualisation
@@ -142,30 +100,62 @@ union_area <- function(xmin, xmax, ymin, ymax){
 #' coverage_correlation(x, y, TRUE)
 #'
 #' @export
-coverage_correlation <- function(x, y, visualise=FALSE){
+coverage_correlation <- function(x, y, visualise=FALSE, 
+                                 method=c('auto', 'exact', 'approx'), M=NULL){
   x <- as.matrix(x); y <- as.matrix(y)
   n <- nrow(x); d <- ncol(x) + ncol(y)
-
-  u <- sort(runif(n))
-  v <- sort(runif(n))
-  rx <- u[rank(x)]
-  ry <- v[rank(y)]
+  stopifnot(n == nrow(y))
   
-  eps_x <- eps_y <- n^(-1/d) / 2
-  zmin <- cbind(rx - eps_x, ry - eps_y)
-  zmax <- cbind(rx + eps_x, ry + eps_y)
+  method <- match.arg(method)
+  if (method == 'auto') method <- ifelse(d <= 3, 'exact', 'approx')
   
-  tmp <- split_rectangles(zmin, zmax)
+  u <- matrix(runif(n*ncol(x)), n)
+  v <- matrix(runif(n*ncol(y)), n)
+  x_rank <- MK_rank(x, u)
+  y_rank <- MK_rank(y, v)
   
-  xmin <- tmp$zmin_splitted[, 1]
-  ymin <- tmp$zmin_splitted[, 2]
-  xmax <- tmp$zmax_splitted[ ,1]
-  ymax <- tmp$zmax_splitted[, 2]
+  eps <- n^(-1/d) / 2
+  zmin <- cbind(x_rank - eps, y_rank - eps)
+  zmax <- cbind(x_rank + eps, y_rank + eps)
   
+  # Wrap around [0,1]^d (split rectangles that cross boundaries); in C
+  splitted <- .Call(C_split_rectangles, as.double(zmin), as.double(zmax),
+                    as.integer(nrow(zmin)), as.integer(ncol(zmin)))
+  zmin_s <- matrix(splitted[[1L]], ncol = ncol(zmin), byrow = FALSE)
+  zmax_s <- matrix(splitted[[2L]], ncol = ncol(zmin), byrow = FALSE)
+  
+  # --- optional visualisation (first two coord only) ---#
   if (visualise){
-    plot(rx, ry, pch=20, cex=0.3, asp=1)
+    xmin <- zmin_s[, 1]; ymin <- zmin_s[, 2]
+    xmax <- zmax_s[ ,1]; ymax <- zmax_s[, 2]
+    plot(x_rank, y_rank, pch=20, cex=0.3, asp=1)
     plot_rectangles(xmin, xmax, ymin, ymax, add=TRUE)
   }
   
-  union_area(xmin, xmax, ymin, ymax)
+  # --- Covered volume --- #
+  if (method == 'exact'){
+    total_volume <- .Call(C_covered_volume, as.double(zmin_s), as.double(zmax_s),
+                          as.integer(nrow(zmin_s)), as.integer(ncol(zmin_s)))
+  } else {
+    if (is.null(M)) M <- as.integer(ceiling(n^(1.5)))
+    ret <- .Call(C_covered_volume_mc,
+                 as.double(zmin_s), as.double(zmax_s),
+                 as.integer(nrow(zmin_s)), as.integer(ncol(zmin_s)),
+                 M)
+    mc_vol <- ret$volume
+    mc_se  <- ret$se
+    total_volume <- mc_vol
+    attr(total_volume, "mc_se") <- mc_se
+  }
+  
+  kappa <- 1 - (1 - 1/n)^n - total_volume
+  sd <- sqrt(variance_formula(n, d)) # use variance formula to compute exact variance
+  Z <- kappa * sqrt(n) / sd # standardised statistic
+  pval <- 1 - pnorm(Z)
+  out <- list(stat = kappa, pval = pval, method = method)
+  if (!is.null(attr(total_volume, "mc_se"))) {
+    out$mc_se <- attr(total_volume, "mc_se")
+  }
+  return(out)
 }
+
