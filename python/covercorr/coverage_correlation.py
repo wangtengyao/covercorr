@@ -169,6 +169,41 @@ def covered_volume(zmin, zmax):
     return total_volume
     
 '''
+Compute covered volume by partitioning [0,1]^d into b^d blocks, where
+b = max integer such that b**d <= n (n = number of rectangles).
+For each block, clip rectangles to the block and call covered_volume on the clipped set.
+This can accelerate computation when rectangles are small/mostly disjoint.
+zmin, zmax: (n x d) arrays with 0 <= zmin < zmax <= 1 assumed.
+'''
+def covered_volume_partitioned(zmin, zmax):
+    if zmin.ndim == 1:
+        zmin = zmin[:, np.newaxis]
+        zmax = zmax[:, np.newaxis]
+    n, d = zmin.shape 
+    b = int(np.floor(n ** (1.0 / d)))
+    cell_size = 1.0 / b
+    total = 0.0
+    for idx in itertools.product(range(b), repeat=d):
+        block_lo = np.array(idx, dtype=float) * cell_size
+        block_hi = block_lo + cell_size
+        # Intersect test: zmin < block_hi and zmax > block_lo in all coords
+        mask = np.all(zmin < block_hi, axis=1) & np.all(zmax > block_lo, axis=1)
+        if not np.any(mask):
+            continue
+        zmin_sel = zmin[mask].copy()
+        zmax_sel = zmax[mask].copy()
+        # Clip to block
+        np.maximum(zmin_sel, block_lo, out=zmin_sel)
+        np.minimum(zmax_sel, block_hi, out=zmax_sel)
+        # Remove degenerates
+        valid = np.all(zmin_sel < zmax_sel, axis=1)
+        if not np.any(valid):
+            continue
+        total += covered_volume(zmin_sel[valid], zmax_sel[valid])
+    return total
+    
+    
+'''
 transforming an nxd data matrix x into multivariate rank statistics. This is the 2-Wasserstein distance
 optimal transport image of x to a uniform sample in [0,1]^d. Output is an nxd matrix of multivariate ranks
 '''
@@ -280,7 +315,7 @@ def coverage_correlation(x, y, visualise=False):
     # if visualise:
     #    plot_rectangles(zmin_splitted[:, 0], zmax_splitted[:, 0], zmin_splitted[:, -1], zmax_splitted[:, -1])
     
-    total_volume = covered_volume(zmin_splitted, zmax_splitted)
+    total_volume = covered_volume_partitioned(zmin_splitted, zmax_splitted)
     kappa = 1 - (1 - 1/n) ** n - total_volume  # 1 - (1 - 1/n)^n is the exact mean
     
     sd = math.sqrt(variance_formula(n, d))  # use variance formula to compute exact variance
