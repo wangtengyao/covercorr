@@ -7,8 +7,11 @@ MK_rank <- function(X, U){
   if (ncol(X) == 1){
     return(sort(U)[rank(X)])
   }
-  cost <- as.matrix(dist(rbind(X, U)))[1:n, (n+1):(2*n)]
-  cost <- cost^2 # squared Euclidean cost
+
+  cost <- matrix(0, n, n)
+  for (j in seq_len(ncol(X))) {
+    cost <- cost + (outer(X[,j], U[,j], "-"))^2
+  }
   
   assignment <- clue::solve_LSAP(cost)
   return(U[assignment, ])
@@ -108,13 +111,15 @@ coverage_correlation <- function(x, y, visualise=FALSE,
   stopifnot(n == nrow(y))
   
   method <- match.arg(method)
-  if (method == 'auto') method <- ifelse(d <= 3, 'exact', 'approx')
+  if (method == 'auto') method <- ifelse(d <= 6, 'exact', 'approx')
   
   u <- matrix(runif(n*ncol(x)), n)
   v <- matrix(runif(n*ncol(y)), n)
+  tic()
   x_rank <- MK_rank(x, u)
   y_rank <- MK_rank(y, v)
-  
+  toc()
+  tic()
   eps <- n^(-1/d) / 2
   zmin <- cbind(x_rank - eps, y_rank - eps)
   zmax <- cbind(x_rank + eps, y_rank + eps)
@@ -135,7 +140,7 @@ coverage_correlation <- function(x, y, visualise=FALSE,
   
   # --- Covered volume --- #
   if (method == 'exact'){
-    total_volume <- .Call(C_covered_volume, as.double(zmin_s), as.double(zmax_s),
+    total_volume <- .Call(C_covered_volume_partitioned, as.double(zmin_s), as.double(zmax_s),
                           as.integer(nrow(zmin_s)), as.integer(ncol(zmin_s)))
   } else {
     if (is.null(M)) M <- as.integer(ceiling(n^(1.5)))
@@ -157,6 +162,7 @@ coverage_correlation <- function(x, y, visualise=FALSE,
   if (!is.null(attr(total_volume, "mc_se"))) {
     out$mc_se <- attr(total_volume, "mc_se")
   }
+  toc()
   return(out)
 }
 
