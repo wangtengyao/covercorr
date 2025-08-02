@@ -115,11 +115,8 @@ coverage_correlation <- function(x, y, visualise=FALSE,
   
   u <- matrix(runif(n*ncol(x)), n)
   v <- matrix(runif(n*ncol(y)), n)
-  tic()
   x_rank <- MK_rank(x, u)
   y_rank <- MK_rank(y, v)
-  toc()
-  tic()
   eps <- n^(-1/d) / 2
   zmin <- cbind(x_rank - eps, y_rank - eps)
   zmax <- cbind(x_rank + eps, y_rank + eps)
