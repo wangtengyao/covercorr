@@ -14,7 +14,7 @@ MK_rank <- function(X, U){
   }
   
   a <- b <- rep(1/n, n)
-  ret <- transport::transport(a = a, b = b, costm=cost, p = 2, method=method)
+  ret <- transport::transport(a = a, b = b, costm=cost, p = 2, method='networkflow')
   assignment <- ret$to
   return(U[assignment, ])
 }
