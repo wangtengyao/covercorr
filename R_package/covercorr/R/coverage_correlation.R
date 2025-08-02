@@ -159,7 +159,6 @@ coverage_correlation <- function(x, y, visualise=FALSE,
   if (!is.null(attr(total_volume, "mc_se"))) {
     out$mc_se <- attr(total_volume, "mc_se")
   }
-  toc()
   return(out)
 }
 
