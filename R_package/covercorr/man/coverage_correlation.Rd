@@ -4,7 +4,13 @@
 \alias{coverage_correlation}
 \title{Coverage-based dependence measure with optional visualisation}
 \usage{
-coverage_correlation(x, y, visualise = FALSE)
+coverage_correlation(
+  x,
+  y,
+  visualise = FALSE,
+  method = c("auto", "exact", "approx"),
+  M = NULL
+)
 }
 \arguments{
 \item{x}{Numeric vector or matrix.}
