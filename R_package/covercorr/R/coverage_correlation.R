@@ -13,7 +13,9 @@ MK_rank <- function(X, U){
     cost <- cost + (outer(X[,j], U[,j], "-"))^2
   }
   
-  assignment <- clue::solve_LSAP(cost)
+  a <- b <- rep(1/n, n)
+  ret <- transport::transport(a = a, b = b, costm=cost, p = 2, method=method)
+  assignment <- ret$to
   return(U[assignment, ])
 }
 
