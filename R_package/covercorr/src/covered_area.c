@@ -72,58 +72,99 @@ static void st_update(segtree_t *st, int node, int l, int r, int mult) {
   }
 }
 
-/* ----- covered area of rectangles ----- */
 double covered_area_native(const double *xmin, const double *xmax,
-                           const double *ymin, const double *ymax, int n){
-  // Build sorted x and associated event arrays
-  int m2 = 2*n;
-  double *x = (double*) R_alloc(m2, sizeof(double));
-  int    *etype = (int*) R_alloc(m2, sizeof(int));
-  int    *idx   = (int*) R_alloc(m2, sizeof(int));
-  for (int i=0;i<n;++i){ x[i]=xmin[i]; etype[i]=+1; idx[i]=i; }
-  for (int i=0;i<n;++i){ x[i+n]=xmax[i]; etype[i+n]=-1; idx[i+n]=i; }
+                           const double *ymin, const double *ymax, int n)
+{
+  int m2 = 2 * n;
 
-  // argsort x (stable enough using qsort with tie-breaker)
-  xv_t *xv = (xv_t*) R_alloc(m2, sizeof(xv_t));
-  for (int i=0;i<m2;++i){ xv[i].val = x[i]; xv[i].id = i; }
+  double *x      = (double*) malloc(m2 * sizeof(double));
+  int    *etype  = (int*) malloc(m2 * sizeof(int));
+  int    *idx    = (int*) malloc(m2 * sizeof(int));
+  xv_t   *xv     = (xv_t*)   malloc(m2 * sizeof(xv_t));
+  double *x_sorted = (double*) malloc(m2 * sizeof(double));
+  int    *order  = (int*) malloc(m2 * sizeof(int));
+  double *ycomb  = (double*) malloc(m2 * sizeof(double));
+  xv_t   *yv     = (xv_t*) malloc(m2 * sizeof(xv_t));
+  int    *ranky  = (int*) malloc(m2 * sizeof(int));
+  double *ysorted = (double*) malloc(m2 * sizeof(double));
+  double *elelen = (double*) malloc(m2 * sizeof(double));
+
+  if (!x || !etype || !idx || !xv || !x_sorted || !order || !ycomb ||
+      !yv || !ranky || !ysorted || !elelen)
+  {
+    error("covered_area_native: memory allocation failed");
+  }
+
+  for (int i = 0; i < n; ++i) {
+    x[i] = xmin[i];
+    etype[i] = +1;
+    idx[i] = i;
+  }
+  for (int i = 0; i < n; ++i) {
+    x[i + n] = xmax[i];
+    etype[i + n] = -1;
+    idx[i + n] = i;
+  }
+
+  for (int i = 0; i < m2; ++i) {
+    xv[i].val = x[i];
+    xv[i].id = i;
+  }
   qsort(xv, m2, sizeof(xv_t), cmp_xv);
-  double *x_sorted = (double*) R_alloc(m2, sizeof(double));
-  int *order = (int*) R_alloc(m2, sizeof(int));
-  for (int i=0;i<m2;++i){ x_sorted[i]=xv[i].val; order[i]=xv[i].id; }
+  for (int i = 0; i < m2; ++i) {
+    x_sorted[i] = xv[i].val;
+    order[i] = xv[i].id;
+  }
 
-  // y ranks: rank of ymin/ymax in combined sorted y
-  double *ycomb = (double*) R_alloc(m2, sizeof(double));
-  for (int i=0;i<n;++i){ ycomb[i]=ymin[i]; ycomb[i+n]=ymax[i]; }
-  // stable sort ycomb and build inverse ranks
-  xv_t *yv = (xv_t*) R_alloc(m2, sizeof(xv_t));
-  for (int i=0;i<m2;++i){ yv[i].val=ycomb[i]; yv[i].id=i; }
+  for (int i = 0; i < n; ++i) {
+    ycomb[i] = ymin[i];
+    ycomb[i + n] = ymax[i];
+  }
+
+  for (int i = 0; i < m2; ++i) {
+    yv[i].val = ycomb[i];
+    yv[i].id = i;
+  }
   qsort(yv, m2, sizeof(xv_t), cmp_xv);
-  int *ranky = (int*) R_alloc(m2, sizeof(int));
-  for (int r=0;r<m2;++r) ranky[yv[r].id] = r;
-  int *rank_ymin = ranky;       /* first n */
-  int *rank_ymax = ranky + n;   /* last n */
+  for (int r = 0; r < m2; ++r) {
+    ranky[yv[r].id] = r;
+  }
 
-  // elementary y segment lengths
-  double *ysorted = (double*) R_alloc(m2, sizeof(double));
-  for (int i=0;i<m2;++i) ysorted[i] = yv[i].val;
-  double *elelen = (double*) R_alloc(m2, sizeof(double));
-  for (int i=0;i<m2-1;++i) elelen[i] = ysorted[i+1]-ysorted[i];
-  elelen[m2-1] = 0.0;
+  int *rank_ymin = ranky;       // First n
+  int *rank_ymax = ranky + n;   // Last n (see below note)
 
-  segtree_t *st = st_build(elelen, m2);
+  for (int i = 0; i < m2; ++i) ysorted[i] = yv[i].val;
+  for (int i = 0; i < m2 - 1; ++i) elelen[i] = ysorted[i + 1] - ysorted[i];
+  elelen[m2 - 1] = 0.0;
+
+  segtree_t *st = st_build(elelen, m2);  // assume it allocates internally and will be freed elsewhere
 
   double area = 0.0;
-  for (int i=0;i<m2-1;++i) {
+  for (int i = 0; i < m2 - 1; ++i) {
     int j = order[i];
     int id = idx[j];
     int mult = etype[j];
-    int l = (j < n) ? rank_ymin[id] : rank_ymin[id]; /* ymin index is in first n */
+
+    int l = (j < n) ? rank_ymin[id] : rank_ymin[id];  // ymin index always in first n
     int r = (j < n) ? rank_ymax[id] : rank_ymax[id];
-    // careful: rank arrays are contiguous as built; above l,r are correct
+
     st_update(st, 1, l, r, mult);
-    double width = x_sorted[i+1] - x_sorted[i];
+    double width = x_sorted[i + 1] - x_sorted[i];
     area += st->scores[1] * width;
   }
+
+  /* Free temp memory (except for st if st_build handles it) */
+  free(x);
+  free(etype);
+  free(idx);
+  free(xv);
+  free(x_sorted);
+  free(order);
+  free(ycomb);
+  free(yv);
+  free(ranky);
+  free(ysorted);
+  free(elelen);
 
   return area;
 }
