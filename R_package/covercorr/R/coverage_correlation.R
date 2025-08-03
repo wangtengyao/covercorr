@@ -38,6 +38,47 @@ variance_formula <- function(n, d){
   return(V)
 }
 
+#' Split rectangels by wrapping them around edges of [0,1]^d
+#' @param zmin n x d matrix of bottomleft coordinates, one row per rectangle
+#' @param zmax n x d matrix of topright coordinates, one row per rectangle
+#' @return a list of zmin and zmax, describing the bottomleft and topright 
+#' coordinates of splitted rectangles
+#' @details This is a wrapper of the C_split_rectangles function implemented in C
+#' @export
+split_rectangles <- function(zmin, zmax){
+  splitted <- .Call(C_split_rectangles, as.double(zmin), as.double(zmax),
+                    as.integer(nrow(zmin)), as.integer(ncol(zmin)))
+  zmin_s <- matrix(splitted[[1L]], ncol = ncol(zmin), byrow = FALSE)
+  zmax_s <- matrix(splitted[[2L]], ncol = ncol(zmin), byrow = FALSE)
+  return(list(zmin=zmin_s, zmax=zmax_s))
+}
+
+#' Total volume of union of rectangles
+#' @param zmin n x d matrix of bottomleft coordinates, one row per rectangle
+#' @param zmax n x d matrix of topright coordinates, one row per rectangle
+#' @returns a numeric value of the volume of the union
+#' @details This is a wrapper of the C_covered_volume_partitioned function in C
+#' @export
+covered_volume_partitioned <- function(zmin, zmax){
+  .Call(C_covered_volume_partitioned, as.double(zmin), as.double(zmax),
+        as.integer(nrow(zmin)), as.integer(ncol(zmin)))
+}
+
+#' Total volume of union of rectangles using Monte Carlo integration
+#' @param zmin n x d matrix of bottomleft coordinates, one row per rectangle
+#' @param zmax n x d matrix of topright coordinates, one row per rectangle
+#' @param M number of Monte Carlo integration sample points
+#' @returns a list of the estimated volume of the union and its standard error
+#' @details This is a wrapper of the C_covered_volume_mc function in C
+#' @export
+covered_volume_mc <- function(zmin, zmax, M){
+  .Call(C_covered_volume_mc,
+               as.double(zmin_s), as.double(zmax_s),
+               as.integer(nrow(zmin_s)), as.integer(ncol(zmin_s)),
+               M)
+}
+
+
 #' Plot a collection of axis-aligned rectangles in the unit square
 #'
 #' Draws rectangles specified by their \code{xmin}, \code{xmax}, \code{ymin},
@@ -124,11 +165,10 @@ coverage_correlation <- function(x, y, visualise=FALSE,
   zmax <- cbind(x_rank + eps, y_rank + eps)
   
   # Wrap around [0,1]^d (split rectangles that cross boundaries); in C
-  splitted <- .Call(C_split_rectangles, as.double(zmin), as.double(zmax),
-                    as.integer(nrow(zmin)), as.integer(ncol(zmin)))
-  zmin_s <- matrix(splitted[[1L]], ncol = ncol(zmin), byrow = FALSE)
-  zmax_s <- matrix(splitted[[2L]], ncol = ncol(zmin), byrow = FALSE)
-  
+  ret <- split_rectangles(zmin, zmax)
+  zmin_s <- ret$zmin
+  zmax_s <- ret$zmax
+
   # --- optional visualisation (first two coord only) ---#
   if (visualise){
     xmin <- zmin_s[, 1]; ymin <- zmin_s[, 2]
@@ -139,14 +179,10 @@ coverage_correlation <- function(x, y, visualise=FALSE,
   
   # --- Covered volume --- #
   if (method == 'exact'){
-    total_volume <- .Call(C_covered_volume_partitioned, as.double(zmin_s), as.double(zmax_s),
-                          as.integer(nrow(zmin_s)), as.integer(ncol(zmin_s)))
+    total_volume <- covered_volume_partitioned(zmin_s, zmax_s)
   } else {
     if (is.null(M)) M <- as.integer(ceiling(n^(1.5)))
-    ret <- .Call(C_covered_volume_mc,
-                 as.double(zmin_s), as.double(zmax_s),
-                 as.integer(nrow(zmin_s)), as.integer(ncol(zmin_s)),
-                 M)
+    ret <- covered_volume_mc(zmin_s, zmax_s, M)
     mc_vol <- ret$volume
     mc_se  <- ret$se
     total_volume <- mc_vol
