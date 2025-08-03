@@ -187,19 +187,21 @@ SEXP C_covered_volume_partitioned(SEXP Rzmin, SEXP Rzmax, SEXP Rn, SEXP Rd)
   const double *zmax = REAL(Rzmax);
 
   int b = (int)floor(pow((double)n, 1.0 / (double)d));
-
   const double h = 1.0 / (double)b;
   const int B = (int)pow(b, d);  /* total number of blocks */
 
-  node_t **heads = (node_t**) R_alloc(B, sizeof(node_t*));
-  for (int i=0; i<B; ++i) heads[i] = NULL;
+  /* allocate buckets */
+  node_t **heads = (node_t**) calloc((size_t)B, sizeof(node_t*));
+  if (!heads) error("Failed to allocate heads array");
 
-  int *powb = (int*) R_alloc(d, sizeof(int));
+  int *powb = (int*) malloc((size_t)d * sizeof(int));
+  int *lo_idx = (int*) malloc((size_t)d * sizeof(int));
+  int *hi_idx = (int*) malloc((size_t)d * sizeof(int));
+  int *cur    = (int*) malloc((size_t)d * sizeof(int));
+  if (!powb || !lo_idx || !hi_idx || !cur)
+    error("Memory allocation failure (powb/lo/hi/cur)");
+
   powb_fill(powb, b, d);
-
-  int *lo_idx = (int*) R_alloc(d, sizeof(int));
-  int *hi_idx = (int*) R_alloc(d, sizeof(int));
-  int *cur    = (int*) R_alloc(d, sizeof(int));
 
   /* Insert each rectangle into relevant buckets */
   for (int i=0; i<n; ++i){
@@ -216,7 +218,8 @@ SEXP C_covered_volume_partitioned(SEXP Rzmin, SEXP Rzmax, SEXP Rn, SEXP Rd)
     }
     while (1){
       int id = linearize(cur, powb, d);
-      node_t *nd = (node_t*) R_alloc(1, sizeof(node_t));
+      node_t *nd = (node_t*) malloc(sizeof(node_t));
+      if (!nd) error("Failed to allocate node");
       nd->idx = i;
       nd->next = heads[id];
       heads[id] = nd;
@@ -231,27 +234,35 @@ SEXP C_covered_volume_partitioned(SEXP Rzmin, SEXP Rzmax, SEXP Rn, SEXP Rd)
   }
 
   double total = 0.0;
-  int *idx_vec = (int*) R_alloc(d, sizeof(int));
+  int *idx_vec = (int*) malloc((size_t)d * sizeof(int));
+  if (!idx_vec) error("Failed to allocate idx_vec");
 
   for (int id=0; id<B; ++id){
     node_t *p = heads[id];
     if (!p) continue;
 
     decode_id(id, b, d, idx_vec);
-    double *blo = (double*) R_alloc(d, sizeof(double));
-    double *bhi = (double*) R_alloc(d, sizeof(double));
+
+    double *blo = (double*) malloc((size_t)d * sizeof(double));
+    double *bhi = (double*) malloc((size_t)d * sizeof(double));
+    if (!blo || !bhi) error("Failed to allocate blo/bhi");
     for (int j=0; j<d; ++j){
       blo[j] = (double) idx_vec[j] * h;
       bhi[j] = blo[j] + h;
       if (bhi[j] > 1.0) bhi[j] = 1.0;
     }
 
+    /* count rectangles */
     int m_cap = 0;
     for (node_t *q=p; q; q=q->next) ++m_cap;
-    if (m_cap == 0) continue;
+    if (m_cap == 0) { 
+      free(blo); free(bhi);
+      continue;
+    }
 
-    double *tmin = (double*) R_alloc(m_cap * d, sizeof(double));
-    double *tmax = (double*) R_alloc(m_cap * d, sizeof(double));
+    double *tmin = (double*) malloc((size_t)m_cap * (size_t)d * sizeof(double));
+    double *tmax = (double*) malloc((size_t)m_cap * (size_t)d * sizeof(double));
+    if (!tmin || !tmax) error("Failed to allocate tmin/tmax");
 
     int m = 0;
     for (node_t *q=p; q; q=q->next){
@@ -268,20 +279,44 @@ SEXP C_covered_volume_partitioned(SEXP Rzmin, SEXP Rzmax, SEXP Rn, SEXP Rd)
       }
       if (ok) ++m;
     }
-    if (m == 0) continue;
-
-    double *umin = (double*) R_alloc(m * d, sizeof(double));
-    double *umax = (double*) R_alloc(m * d, sizeof(double));
-    for (int j=0; j<d; ++j){
-      for (int r=0; r<m; ++r){
-        umin[r + j*m] = tmin[r + j*m_cap];
-        umax[r + j*m] = tmax[r + j*m_cap];
+    if (m > 0) {
+      double *umin = (double*) malloc((size_t)m * (size_t)d * sizeof(double));
+      double *umax = (double*) malloc((size_t)m * (size_t)d * sizeof(double));
+      if (!umin || !umax) error("Failed to allocate umin/umax");
+      for (int j=0; j<d; ++j){
+        for (int r=0; r<m; ++r){
+          umin[r + j*m] = tmin[r + j*m_cap];
+          umax[r + j*m] = tmax[r + j*m_cap];
+        }
       }
+      double vol = covered_volume_rec(umin, umax, m, d);
+      total += vol;
+      free(umin);
+      free(umax);
     }
 
-    double vol = covered_volume_rec(umin, umax, m, d);
-    total += vol;
+    /* free temporary memory */
+    free(tmin);
+    free(tmax);
+    free(blo);
+    free(bhi);
+
+    /* free linked list */
+    node_t *q = p;
+    while (q) {
+      node_t *next = q->next;
+      free(q);
+      q = next;
+    }
   }
+
+  /* free global buffers */
+  free(idx_vec);
+  free(powb);
+  free(lo_idx);
+  free(hi_idx);
+  free(cur);
+  free(heads);
 
   SEXP out = PROTECT(allocVector(REALSXP, 1));
   REAL(out)[0] = total;
