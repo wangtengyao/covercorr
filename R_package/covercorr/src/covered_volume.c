@@ -47,7 +47,8 @@ static double covered_volume_rec(const double *zmin,
   /* ---------- d >= 3: sweep on the first coord ---------- */
 
   const int m2 = 2 * n;
-  evt_t *ev = (evt_t*) R_alloc(m2, sizeof(evt_t));
+  evt_t *ev = (evt_t*) malloc((size_t)m2 * sizeof(evt_t));
+  if (!ev) error("covered_volume_rec: failed to allocate events buffer");
 
   /* Build events: zmin[,0] are openings; zmax[,0] are closings */
   const double *x0min = zmin + 0 * n;
@@ -56,10 +57,14 @@ static double covered_volume_rec(const double *zmin,
     ev[i]     = (evt_t){ x0min[i], i, 1 };
     ev[i + n] = (evt_t){ x0max[i], i, 0 };
   }
-  qsort(ev, m2, sizeof(evt_t), cmp_evt);
+  qsort(ev, (size_t)m2, sizeof(evt_t), cmp_evt);
 
   /* Active set flags for current slice */
-  int *active = (int*) R_alloc(n, sizeof(int));
+  int *active = (int*) malloc((size_t)n * sizeof(int));
+  if (!active) {
+      free(ev);
+      error("covered_volume_rec: failed to allocate active flags");
+    }
   for (int i = 0; i < n; ++i) active[i] = 0;
 
   double volume = 0.0;
@@ -78,8 +83,20 @@ static double covered_volume_rec(const double *zmin,
     if (na == 0) continue;
 
     /* Build slice arrays smin, smax in (d-1) dims, column-major (na x (d-1)) */
-    double *smin = (double*) R_alloc(na * (d - 1), sizeof(double));
-    double *smax = (double*) R_alloc(na * (d - 1), sizeof(double));
+	size_t slice_len = (size_t)na * (size_t)(d - 1);
+    double *smin = (double*) malloc(slice_len * sizeof(double));
+	if (!smin) {
+	  free(active);
+	  free(ev);
+	  error("covered_volume_rec: failed to allocate smin slice");
+	}
+    double *smax = (double*) malloc(slice_len * sizeof(double));
+    if (!smax) {
+      free(smin);
+      free(active);
+      free(ev);
+      error("covered_volume_rec: failed to allocate smax slice");
+    }
 
     int pos = 0;
     /* For each original rectangle i that is active, copy its coords j=1..d-1 */
@@ -95,8 +112,16 @@ static double covered_volume_rec(const double *zmin,
     /* Recurse on (d-1)-dimensional slice */
     double area = covered_volume_rec(smin, smax, na, d - 1);
     volume += area * width;
+	
+    /* free per-slice buffers before moving to next interval */
+    free(smin);
+    free(smax);
   }
 
+  /* free per-call buffers */
+  free(active);
+  free(ev);
+  
   return volume;
 }
 
