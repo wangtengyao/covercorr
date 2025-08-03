@@ -5,7 +5,7 @@
 MK_rank <- function(X, U){
   n <- nrow(X)
   if (ncol(X) == 1){
-    return(sort(U)[rank(X)])
+    return(sort(U)[rank(X, tie.method='random')])
   }
 
   cost <- matrix(0, n, n)
