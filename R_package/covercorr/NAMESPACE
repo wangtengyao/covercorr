@@ -2,6 +2,7 @@
 useDynLib(covercorr, .registration = TRUE)
 export(MK_rank)
 export(coverage_correlation)
+export(covered_volume)
 export(covered_volume_mc)
 export(covered_volume_partitioned)
 export(plot_rectangles)

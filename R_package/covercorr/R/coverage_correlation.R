@@ -53,7 +53,7 @@ split_rectangles <- function(zmin, zmax){
   return(list(zmin=zmin_s, zmax=zmax_s))
 }
 
-#' Total volume of union of rectangles
+#' Total volume of union of rectangles using volume hashing
 #' @param zmin n x d matrix of bottomleft coordinates, one row per rectangle
 #' @param zmax n x d matrix of topright coordinates, one row per rectangle
 #' @returns a numeric value of the volume of the union
@@ -61,6 +61,17 @@ split_rectangles <- function(zmin, zmax){
 #' @export
 covered_volume_partitioned <- function(zmin, zmax){
   .Call(C_covered_volume_partitioned, as.double(zmin), as.double(zmax),
+        as.integer(nrow(zmin)), as.integer(ncol(zmin)))
+}
+
+#' Total volume of union of rectangles
+#' @param zmin n x d matrix of bottomleft coordinates, one row per rectangle
+#' @param zmax n x d matrix of topright coordinates, one row per rectangle
+#' @returns a numeric value of the volume of the union
+#' @details This is a wrapper of the C_covered_volume_partitioned function in C
+#' @export
+covered_volume <- function(zmin, zmax){
+  .Call(C_covered_volume, as.double(zmin), as.double(zmax),
         as.integer(nrow(zmin)), as.integer(ncol(zmin)))
 }
 
