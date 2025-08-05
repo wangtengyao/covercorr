@@ -200,8 +200,8 @@ coverage_correlation <- function(x, y, visualise=FALSE,
     attr(total_volume, "mc_se") <- mc_se
   }
   
-  excess_vacancy <- 1 - (1 - 1/n)^n - total_volume
-  kappa <- excess_vacancy / (1 - (1 - 1/n)^n)
+  excess_vacancy <- 1 - exp(-1) - total_volume
+  kappa <- excess_vacancy / (1 - exp(-1))
   sd <- sqrt(variance_formula(n, d)) # use variance formula to compute exact variance
   Z <- excess_vacancy * sqrt(n) / sd # standardised statistic
   pval <- 1 - pnorm(Z)

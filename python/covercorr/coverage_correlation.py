@@ -316,8 +316,8 @@ def coverage_correlation(x, y, visualise=False):
     #    plot_rectangles(zmin_splitted[:, 0], zmax_splitted[:, 0], zmin_splitted[:, -1], zmax_splitted[:, -1])
     
     total_volume = covered_volume_partitioned(zmin_splitted, zmax_splitted)
-    excess_vacancy = 1 - (1 - 1/n) ** n - total_volume  # 1 - (1 - 1/n)^n is the exact mean
-    kappa = excess_vacancy / (1 - (1 - 1/n) ** n) # coverage coefficient
+    excess_vacancy = 1 - np.exp(-1) - total_volume  # 1 - (1 - 1/n)^n is the exact mean
+    kappa = excess_vacancy / (1 - np.exp(-1)) # coverage coefficient
     sd = math.sqrt(variance_formula(n, d))  # use variance formula to compute exact variance
     Z = excess_vacancy * math.sqrt(n) / sd  # standardised statistic
     pval = norm.sf(Z)  # Using survival function for upper tail probability to get p-value
