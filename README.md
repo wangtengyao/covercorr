@@ -8,7 +8,7 @@ The repository supports both **Python** and **R**, with structurally separated p
 
 ## 🔍 What is Coverage Correlation?
 
-The **coverage correlation coefficient** is a statistical measure that quantifies dependence between two random vectors by computing the union volume of data-centered hyperrectangles in a uniform space. It is especially useful in multivariate, nonlinear, or non-Euclidean contexts.
+The **coverage correlation coefficient** is a statistical measure that quantifies dependence between two random vectors by computing the union volume of data-centered hyperrectangles in a uniform space. It measures how 'singular' the joint distribution is with respect to the product of the marginals. It is especially useful in picking up dependencies where both $X$ and $Y$ can be described approximately as functions of a latent variable $U$. 
 
 For a sample of paired observations $(X_i, Y_i)$, the statistic:
 
