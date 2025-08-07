@@ -66,7 +66,7 @@ print(result)
 ```bash
 covercorr/
 │
-├── R_package/     # R package
+├── R/             # R package and simulation
 │
 ├── python/        # Python package
 │
