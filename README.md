@@ -23,7 +23,7 @@ For a sample of paired observations $(X_i, Y_i)$, the statistic:
 All Python code is under the `python/` subdirectory. To install directly from GitHub:
 
 ```bash
-pip install git+https://github.com/wangtengyao/covercorr.git
+pip install git+https://github.com/wangtengyao/covercorr.git#subdirectory=python
 ```
 
 ### Usage:
