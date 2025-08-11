@@ -1,0 +1,100 @@
+---
+title: "coverage_correlation"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{coverage_correlation}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+Function `coverage_correlation`, implements the **coverage correlation coefficient** introduced in the paper  [*Coverage correlation: detecting singular dependencies between random variables*](https://arxiv.org/abs/2508.06402). The coverage correlation coefficient, is a nonparametric measure of statistical association designed to detect dependencies concentrated on low-dimensional structures within the joint distribution of two random variables or vectors. Based on Monge--Kantorovich ranks and geometric coverage processes, this statistic quantifies the extent to which the joint distribution concentrates on a singular subset with respect to the product of the marginals. The coverage correlation coefficient is distribution-free, admits an analytically tractable asymptotic null distribution, and can be computed efficiently, making it well-suited for uncovering complex, potentially nonlinear associations in large-scale pairwise testing.
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(covercorr)
+```
+### Example 1
+In this example, we demonstrate how to use`coverage_correlation` with a simple simulation. We compute the coverage correlation coefficient between two one dimensional Normal random variables, `X` and `Y`, and then vary the strength of their relationship to observe how the statistic changes.
+```{r}
+n <- 100
+p <- 1
+X <- rnorm(n)
+Y <- rnorm(n)
+result <- coverage_correlation(Y, X, visualise = TRUE)
+str(result)
+```
+In the example above, `X` and `Y` are independent.  
+The parameter `visualise` defaults to `FALSE`, but setting it to `TRUE`
+produces a plot that illustrates the intuition behind the coverage correlation coefficient.
+
+The coverage correlation coefficient first transforms `X` and `Y` into their
+Monge–Kantorovich ranks, denoted by `X_rank` and `Y_rank`, which are uniformly distributed
+on \([0, 1]\). The plot displays the pairs \((X_{\text{rank}_i}, Y_{\text{rank}_i})\) along with cubes of
+volume \(n^{-1}\).
+
+Inside the function `coverage_correlation`, we compute
+\(V_n\), the total uncovered area after taking the union of these cubes.
+The coverage correlation coefficient is then defined as
+
+\[
+\kappa_n^{X, Y} := \frac{V_n - e^{-1}}{1 - e^{-1}}.
+\]
+
+The function returns a list with four elements:
+
+- `$stat`: the value of the coverage correlation coefficient.
+- `$pval`: the p-value of this statistic under the null hypothesis of independence.
+- `$method`: the method used to compute the statistic (e.g., `"exact"` or `"approx"`).
+- `$mc_se`: If method `"approx"` was used \code{mc_se} is the standard error of the Monte Carlo approximation, otherwise it is 0.
+
+By default, `method = "auto"`. In this mode, if the **total dimension** of `X` and `Y`  
+(i.e., `ncol(X) + ncol(Y)`, treating vectors as one-dimensional) is at most 6,  
+the method is set to `"exact"`; otherwise, it uses `"approx"`.
+
+Next we can see how the result changes as we introduces dependence between `X` and `Y`
+
+```{r}
+n <- 100
+p <- 1
+X <- rnorm(n)
+Z <- rnorm(n)
+rho <- 0.9
+Y <- rho * X + sqrt(1 - rho^2) * Z
+result <- coverage_correlation(Y, X, visualise = TRUE)
+str(result)
+```
+You may notice parts of some cubes appearing at the corners of the plot.  
+This happens because we treat \([0, 1]^2\) as a **torus**.  
+If a cube centered at one of the rank points lies partially outside  
+\([0, 1]^2\), we *wrap it around* so that the plot reflects this topology.
+
+### Example 2
+
+The coverage correlation coefficient can handle multidimensional random vectors as well. 
+```{r}
+n <- 100
+p <- 2
+X <- matrix(rnorm(p * n), ncol = p)
+Y <- matrix(0, nrow = n, ncol = p)
+Y[, 1] <- X[, 1]^2
+Y[, 2] <- X[, 1] * X[, 2]
+result <- coverage_correlation(Y, X)
+str(result)
+```
+In this case we cannot visualise the whole plot as `X` and `Y` are not one-dimensional.
+
+### Example 3
+In the example below, `X` and `Y` are independent and 2-dimensional. We set the `method` parameter equal to `approx`.
+```{r}
+n <- 50
+p <- 2
+X <- matrix(rnorm(p * n), ncol = p)
+Y <- matrix(rnorm(p * n), ncol = p)
+result <- coverage_correlation(Y, X, method = 'approx')
+str(result)
+```
