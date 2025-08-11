@@ -61,6 +61,8 @@ result <- coverage_correlation(x, y)
 print(result)
 ```
 
+---
+
 ## Repository Structure
 
 ```bash
@@ -73,6 +75,8 @@ covercorr/
 └── README.md
 ```
 
+---
+
 ## Reference
 
-Yang, X., Azadkia, M. and Wang, T. (2025+) Coverage correlation: detecting singular dependencies between random variables. Preprint. arxiv:2508.06402.
+Yang, X., Azadkia, M. and Wang, T. (2025) Coverage correlation: detecting singular dependencies between random variables. Preprint. arxiv:2508.06402.
