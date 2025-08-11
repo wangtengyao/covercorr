@@ -1,15 +1,35 @@
 Package: covercorr
-Type: Package
 Title: Coverage correlation coefficient and testing for independence
-Version: 1.0
-Date: 2025-07-30
-Author: Xuzhi Yang, Mona Azadkia, Tengyao Wang
-Maintainer: Tengyao Wang <t.wang59@lse.ac.uk>
-Description: Computes the coverage correlation coefficient, a statistical measure that quantifies dependence between two random vectors by computing the union volume of data-centered hyperrectangles in a uniform space.
-License: GPL-2
+Version: 1.0.0
+Authors@R: c(
+    person(
+      "Tengyao", "Wang",
+      email = "t.wang59@lse.ac.uk",
+      role = c("aut", "cre")
+    ),
+    person(
+      "Mona", "Azadkia",
+      email = "monaazadkia@gmail.com",
+      role = c("aut", "ctb")
+    ),
+    person(
+      "Xuzhi", "Yang",
+      email = "X.Yang64@lse.ac.uk",
+      role = c("aut", "ctb")
+    )
+  )
+Description: Computes the coverage correlation coefficient introduced in <https://arxiv.org/abs/2508.06402>, a statistical measure that quantifies dependence between two random vectors by computing the union volume of data-centered hyperrectangles in a uniform space.
+License: GPL-3
+Imports: transport
 Encoding: UTF-8
-Depends: R (>= 4.0)
-Imports: clue, stats
-LinkingTo:
-NeedsCompilation: yes
+Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
+Suggests: knitr, rmarkdown
+VignetteBuilder: knitr
+NeedsCompilation: yes
+Packaged: 2025-08-11 07:24:51 UTC; monaazadkia
+Author: Tengyao Wang [aut, cre],
+  Mona Azadkia [aut, ctb],
+  Xuzhi Yang [aut, ctb]
+Maintainer: Tengyao Wang <t.wang59@lse.ac.uk>
+Depends: R (>= 3.5.0)
