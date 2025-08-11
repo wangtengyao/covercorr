@@ -62,9 +62,14 @@ print(result)
 ```bash
 covercorr/
 │
-├── R/             # R package and simulation
+├── R/                           # R package and simulation
+│   ├── covercorr/               # R package source code
+│   └── simulation_code/         # Simulation scripts and related files
 │
-├── python/        # Python package
+├── python/                      # Python package
+│   ├── covercorr/               # Python package source code
+│   ├── setup.py                 # Packaging configuration
+│   └── pyproject.toml           # Build system configuration
 │
 └── README.md
 ```
