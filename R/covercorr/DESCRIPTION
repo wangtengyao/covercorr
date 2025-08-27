@@ -18,7 +18,7 @@ Authors@R: c(
       role = c("aut", "ctb")
     )
   )
-Description: Computes the coverage correlation coefficient introduced in <https://arxiv.org/abs/2508.06402>, a statistical measure that quantifies dependence between two random vectors by computing the union volume of data-centered hyperrectangles in a uniform space.
+Description: Computes the coverage correlation coefficient introduced in <https://arxiv.org/abs/2508.06402>, a statistical measure that quantifies dependence between two random vectors by computing the union volume of data-centered hypercubes in a uniform space.
 License: GPL-3
 Imports: transport
 Encoding: UTF-8
